@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather Forecast - Home</title>
+
+  <!-- 1. Bootstrap 5 CSS Framework -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 2. Bootstrap Icons CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <!-- 3. Custom External Stylesheet -->
+  <link rel="stylesheet" href="./css/styles.css">
+
+  <!-- Bootstrap JS Bundle (Required for Collapse/Accordion) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</head>
+<body class="bg-white d-flex flex-column min-vh-100">
+
+  <!-- Site Header -->
+  <header class="navbar navbar-expand-lg navbar-dark bg-primary mb-3">
+    <nav class="container" style="max-width: 950px;">
+      <a class="navbar-brand fw-bold" href="index.html">Weather Forecast</a>
+      <div class="navbar-nav ms-auto">
+        <a class="nav-link active" href="index.html">Home</a>
+        <a class="nav-link" href="contact.html">Contact Us</a>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container my-2 flex-grow-1" style="max-width: 950px;">
+
+    <!-- Part 1: Header & Search Input Section -->
+    <section id="searchSection" class="mb-3">
+      <div class="row align-items-center">
+        <!-- Search Box -->
+        <div class="col-12 col-md-6 ms-auto mb-3">
+          <div class="d-flex position-relative">
+            <div class="position-relative flex-grow-1 me-2">
+              <input 
+                type="text" 
+                id="searchInput" 
+                class="form-control" 
+                placeholder="Search location..." 
+                autocomplete="off"
+              >
+              <div 
+                id="searchSuggestions" 
+                class="dropdown-menu w-100 shadow-sm overflow-auto position-absolute mt-1 d-none" 
+                style="max-height: 250px; z-index: 1050;"
+              ></div>
+            </div>
+            <button id="searchBtn" class="btn btn-outline-secondary" type="button">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Title Header -->
+        <div class="col-12">
+          <h1 id="cityName" class="fw-bold m-0">Melbourne, Victoria, Australia Weather</h1>
+        </div>
+      </div>
+    </section>
+
+    <!-- Part 2: Weather Warnings Section -->
+    <section id="warningSection" class="mb-3 d-none">  
+      <div class="card border-0 shadow-sm overflow-hidden" style="background-color: #ffda6a;">
+
+        <!-- Outer Toggle Button -->
+        <button 
+          class="btn w-100 text-start p-3 fw-bold border-0 d-flex justify-content-between align-items-center"
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#warningListCollapse" 
+          aria-expanded="true" 
+          aria-controls="warningListCollapse"
+          style="color: #000000; background: transparent;"
+        >
+          <span>
+            <i class="bi bi-caret-down-fill me-2 toggle-arrow"></i> 
+            <span id="warningTitle">View 1 weather warning</span>
+          </span>
+        </button>
+
+        <!-- Outer Collapsible Panel -->
+        <div class="collapse show p-3 bg-light" id="warningListCollapse">
+          <div id="warningContent">
+            <!-- Inner Cards Injected by JS -->
+          </div>
+        </div>
+
+      </div>    
+    </section>
+
+    <!-- Part 3: Main Weather Overview (Now & Today) Section -->
+    <section id="overviewSection" class="container my-4" aria-label="Current and Today Overview">
+      <div class="row g-4 align-items-stretch">
+        
+        <!-- LEFT CARD: "Now" Section -->
+        <div class="col-md-6 col-lg-5">
+          <div class="card border-0 p-4 rounded-4 bg-light h-100 shadow-sm">
+            <h2 class="h5 fw-bold text-dark mb-4">Now</h2>
+
+            <!-- Weather Icon & Temperature Display -->
+            <div class="d-flex align-items-center mb-1">
+              <i id="nowIcon" class="bi bi-cloud-sun-fill text-warning display-2 me-3"></i>
+              <div id="nowTemp" class="display-1 fw-bold text-dark me-1">--°</div>
+            </div>
+
+            <!-- Feels Like -->
+            <p class="text-muted mb-4 fs-6">
+              Feels like <span id="nowFeelsLike" class="fw-semibold text-dark">--°</span>
+            </p>
+
+            <!-- Detailed Metrics -->
+            <div class="d-flex flex-column gap-2 text-secondary fs-6">
+              <div class="d-flex align-items-center">
+                <i class="bi bi-droplet-fill me-2 text-secondary"></i>
+                <span id="nowHumidity">Humidity: --%</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-cloud-rain-fill me-2 text-secondary"></i>
+                <span id="nowRainfall">Rainfall since 9am: --mm</span>
+              </div>
+              <div class="d-flex align-items-center">
+                <i class="bi bi-wind me-2 text-secondary"></i>
+                <span id="nowWind">Wind: --</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT CARD: "Today" Section -->
+        <div class="col-md-6 col-lg-7">
+          <div class="card border-0 p-4 rounded-4 bg-white h-100 shadow-sm">
+            <h2 class="h5 fw-bold text-dark mb-4">Today</h2>
+
+            <!-- Min & Max Temperatures -->
+            <div class="d-flex gap-5 mb-4">
+              <div>
+                <div class="text-primary fw-bold mb-1 fs-6">Min</div>
+                <div id="todayMin" class="display-4 fw-bold text-dark">--°</div>
+              </div>
+              <div>
+                <div class="text-danger fw-bold mb-1 fs-6">Max</div>
+                <div id="todayMax" class="display-4 fw-bold text-dark">--°</div>
+              </div>
+            </div>
+
+            <hr class="my-3 text-muted opacity-25">
+
+            <!-- Today Metrics Grid -->
+            <div class="row row-cols-1 row-cols-sm-2 g-3 text-secondary fs-6 mt-1">
+              <div class="col d-flex align-items-center">
+                <i class="bi bi-sunrise me-2"></i>
+                <span id="todaySunrise">Sunrise: --</span>
+              </div>
+              <div class="col d-flex align-items-center">
+                <i class="bi bi-sun me-2"></i>
+                <span id="todayUv">UV Alert: --</span>
+              </div>
+              <div class="col d-flex align-items-center">
+                <i class="bi bi-sunset me-2"></i>
+                <span id="todaySunset">Sunset: --</span>
+              </div>
+              <div class="col d-flex align-items-center">
+                <i class="bi bi-droplet-fill me-2 text-primary"></i>
+                <span id="todayRainChance">Rain chance: --%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Part 4: Hourly Forecast Section -->
+    <section id="hourlySection" class="mb-4" aria-labelledby="hourly-heading">
+      <h5 id="hourly-heading" class="fw-bold mt-4 mb-3">Hourly Forecast</h5>
+      <div class="d-flex overflow-auto py-3 px-2 bg-white rounded-4 shadow-sm border-0" id="hourlyContainer">
+        <!-- Live Hourly Cards Injected Here -->
+      </div>
+    </section>
+
+    <!-- Part 5: Daily Forecast Section -->
+    <section id="dailySection" class="mb-4" aria-labelledby="daily-heading">
+      <h2 id="daily-heading" class="h5 fw-bold mb-3">7-Day Forecast</h2>
+      <div id="dailyContainer">
+        <!-- Live 7-Day Grid Cards Injected Here -->
+      </div>
+    </section>
+
+    <!-- Part 6: Temperature Trend Analysis Section -->
+    <section id="trendSection" class="card p-4 border-0 shadow-sm rounded-4 bg-white mt-4" aria-labelledby="trend-heading">
+      <h5 id="trend-heading" class="fw-bold mb-3">Temperature Trend Analysis</h5>
+      <div style="position: relative; height: 260px; width: 100%;">
+        <canvas id="tempTrendChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Part 7: Map using Leftlet Section -->
+    <section id="trendSection" class="card p-4 border-0 shadow-sm rounded-4 bg-white mt-4" aria-labelledby="trend-heading">
+      <div id="map" style="width: 100%; height: 400px; border-radius: 8px;"></div>
+    </section>
+
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="bg-primary text-white text-center py-3 mt-auto">
+    <div class="container">
+      <p class="mb-0 small">&copy; 2026 Weather Forecast. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <!-- JS Link -->
+  <script src="./js/app.js"></script>
+  
+</body>
+</html>

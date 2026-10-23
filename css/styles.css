@@ -1,0 +1,67 @@
+/**
+ * @file styles.css
+ * @description Main stylesheet for Weather Forecast application.
+ */
+
+/* Global & Layout Constraints */
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #ffffff;
+}
+
+/* "Now" Weather Card */
+.now-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+}
+
+.temp-large {
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Hourly Forecast Scrollable Row */
+.hourly-scroll {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.2rem;
+  padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+.hourly-item {
+  min-width: 65px;
+  text-align: center;
+}
+
+/* Daily Forecast Cards */
+.daily-card-header {
+  background-color: #0d6efd; /* Bootstrap primary blue */
+  color: #ffffff;
+  font-weight: 600;
+  text-align: center;
+  padding: 6px;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+/* Chart.js Container Height Constraint */
+.chart-container {
+  position: relative;
+  height: 280px; /* Prevents canvas from stretching vertically */
+  width: 100%;
+}
+
+/* Rotates the arrow smoothy when accordion is opened vs closed */
+.toggle-arrow {
+  transition: transform 0.2s ease-in-out;
+}
+
+button[aria-expanded="false"] .toggle-arrow {
+  transform: rotate(-90deg);
+}
+
+button[aria-expanded="true"] .toggle-arrow {
+  transform: rotate(0deg);
+}
