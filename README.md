@@ -5,3 +5,8 @@ This is my first GitHub deployment for my assessment.
 - `index.html`: Main application dashboard
 - `contact.html`: Contact page
 - `styles.css`: Core layout and component styling
+
+## Added Files (27/10/2026)
+- `app.js`: Skeleton
+- `config.js`: With API URLs and default location
+- `map.js`: Placeholder and load-order quard
