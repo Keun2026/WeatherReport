@@ -89,6 +89,12 @@ const CONFIG = deepFreeze({
     name: "Melbourne, Victoria"
   },
 
+  /** Locale codes that control how dates and times are written. */
+  locale: {
+    /** Locale used for long dates in weather warnings (Australian English). */
+    warningDateLocale: "en-AU",
+  },
+
   /** Text shown to the user. */
   text: {
     /** Word added after a location name in headings, e.g. "Melbourne, Victoria Weather". */
