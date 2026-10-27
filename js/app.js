@@ -215,6 +215,126 @@ class WeatherIcons {
 
 
 /* ==========================================================================
+ * DATA ACCESS CLASSES
+ * These classes only fetch data and return it. They never touch the page or the map.
+ * ========================================================================== */
+
+/**
+ * PARENT CLASS for every class that talks to a web service.
+ * Holds a base URL and provides one shared method for downloading JSON, so
+ * the child classes do not each repeat the same fetch and error-checking code.
+ *
+ * Child classes: WeatherApi, GeocodingApi, ReverseGeocodingApi.
+ * Parent class: none.
+ */
+class ApiClient {
+  /** Root URL that all requests made by this client start with. */
+  #baseUrl;
+
+  /**
+   * Creates an API client.
+   *
+   * @param {string} baseUrl - The root URL of the web service this client talks to.
+   */
+  constructor(baseUrl) {
+    this.#baseUrl = baseUrl;
+  }
+
+  /**
+   * The root URL of the web service (read-only, so children cannot change it by accident).
+   * @returns {string} The base URL given to the constructor.
+   */
+  get baseUrl() {
+    return this.#baseUrl;
+  }
+
+  /**
+   * Downloads a URL and parses the response as JSON.
+   *
+   * @param {string} url - The full URL to request.
+   * @returns {Promise<Object>} The parsed JSON response.
+   * @throws {Error} If the server replies with an error status (anything outside 200-299).
+   */
+  async getJson(url) {
+    const response = await fetch(url);
+    // Treats HTTP error codes (404, 500...) as failures instead of parsing an error page.
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+    // Parses and returns the JSON payload resolved from the network response.
+    return response.json();
+  }
+}
+
+/**
+ * Requests weather forecasts from the Open-Meteo forecast API.
+ *
+ * Parent class: ApiClient.
+ */
+class WeatherApi extends ApiClient {
+  /** Shared settings from config.js (field lists, time zone). */
+  #config;
+
+  /**
+   * Creates the weather API client.
+   *
+   * @param {Object} [config=CONFIG] - Configuration object; defaults to the global CONFIG from config.js.
+   */
+  constructor(config = CONFIG) {
+    super(config.api.weatherBaseUrl);
+    this.#config = config;
+  }
+
+  /**
+   * Builds a forecast request URL for a location and a set of weather fields.
+   *
+   * @param {number} lat - Latitude of the location.
+   * @param {number} lon - Longitude of the location.
+   * @param {{current: string[], hourly: string[], daily: string[]}} fields - Names of the weather fields to request.
+   * @returns {string} The complete request URL.
+   */
+  #buildForecastUrl(lat, lon, fields) {
+    return `${this.baseUrl}/forecast?latitude=${lat}&longitude=${lon}` +
+      `&current=${fields.current.join(",")}` +
+      `&hourly=${fields.hourly.join(",")}` +
+      `&daily=${fields.daily.join(",")}` +
+      `&timezone=${this.#config.api.timezone}`;
+  }
+
+  /**
+   * Fetches current, hourly and daily weather for a location (used for the
+   * default load and for searches).
+   *
+   * @param {number} lat - Latitude of the location.
+   * @param {number} lon - Longitude of the location.
+   * @returns {Promise<Object|undefined>} The forecast data, or undefined if the request failed
+   *                                      (the error is logged to the console).
+   */
+  async fetchWeatherData(lat, lon) {
+    // Constructs the complete Open-Meteo REST API request URL with required weather parameters.
+    const endpoint = this.#buildForecastUrl(lat, lon, this.#config.api.forecastFields);
+    try {
+      return await this.getJson(endpoint);
+    } catch (error) {
+      console.error("Failed to fetch weather data:", error);
+    }
+  }
+
+  /**
+   * Fetches a smaller weather dataset for a map click.
+   *
+   * @param {number} lat - Latitude of the clicked point.
+   * @param {number} lng - Longitude of the clicked point.
+   * @returns {Promise<Object>} The forecast data.
+   * @throws {Error} If the request fails (the caller handles the error).
+   */
+  async fetchWeatherByCoords(lat, lng) {
+    return this.getJson(this.#buildForecastUrl(lat, lng, this.#config.api.mapClickFields));
+  }
+}
+
+
+/* ==========================================================================
  * START-UP
  * ========================================================================== */
 
