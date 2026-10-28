@@ -335,6 +335,272 @@ class WeatherApi extends ApiClient {
 
 
 /* ==========================================================================
+ * DISPLAY CLASSES
+ * These classes only read and write the page. They never fetch data.
+ * ========================================================================== */
+
+/**
+ * PARENT CLASS for every class that draws something on the page.
+ * Provides safe helpers for finding elements (using the IDs in CONFIG.dom)
+ * and an abstract render() method that each child class overrides.
+ * Because every child shares the render() method name, the dashboard can
+ * treat them all the same way (polymorphism).
+ *
+ * Child classes: LocationHeading, OverviewCards, HourlyForecast, DailyForecast,
+ *                WeatherWarnings, SearchSuggestions, MapClickRenderer, TemperatureChart.
+ * Parent class: none.
+ */
+class UiComponent {
+  /** Shared settings from config.js (element IDs, text, limits). */
+  #config;
+
+  /**
+   * Creates a display component.
+   *
+   * @param {Object} [config=CONFIG] - Configuration object; defaults to the global CONFIG from config.js.
+   */
+  constructor(config = CONFIG) {
+    this.#config = config;
+  }
+
+  /**
+   * The configuration object, available to child classes (read-only).
+   * @returns {Object} The configuration given to the constructor.
+   */
+  get config() {
+    return this.#config;
+  }
+
+  /**
+   * Finds a page element using a key from CONFIG.dom.
+   *
+   * @param {string} key - A key of CONFIG.dom, e.g. "nowTemp" (not the HTML ID itself).
+   * @returns {HTMLElement|null} The element, or null if it is not on the page.
+   */
+  getElement(key) {
+    return document.getElementById(this.#config.dom[key]);
+  }
+
+  /**
+   * Finds the first page element that matches a CSS selector.
+   *
+   * @param {string} selector - A CSS selector, e.g. "h1" or ".sunrise".
+   * @returns {Element|null} The matching element, or null if there is none.
+   */
+  queryElement(selector) {
+    return document.querySelector(selector);
+  }
+
+  /**
+   * Safely sets the text of a page element. Does nothing if the element is
+   * missing or the text is null/undefined.
+   *
+   * @param {string} key - A key of CONFIG.dom identifying the element.
+   * @param {string} text - The text to display.
+   */
+  setText(key, text) {
+    // Locates DOM element by its configured identifier.
+    const el = this.getElement(key);
+    // Sets text content if target element exists and text value is non-null.
+    if (el && text !== null && text !== undefined) {
+      el.textContent = text;
+    }
+  }
+
+  /**
+   * ABSTRACT METHOD: draws this component from the given data.
+   * Every child class must override it.
+   *
+   * @param {Object} data - The data to display (its shape depends on the child class).
+   * @throws {Error} Always, if a child class has not overridden it.
+   */
+  render(data) {
+    throw new Error(`${this.constructor.name} must implement render()`);
+  }
+}
+
+/**
+ * Shows the name of the selected location in the page heading and page title.
+ *
+ * Parent class: UiComponent.
+ */
+class LocationHeading extends UiComponent {
+  /**
+   * Updates the location heading, e.g. "Melbourne, Victoria Weather".
+   *
+   * @param {string} locationName - The name of the selected location.
+   */
+  render(locationName) {
+    const cityNameEl = this.getElement("cityName");
+    if (cityNameEl) {
+      cityNameEl.textContent = `${locationName} ${this.config.text.headingSuffix}`;
+    }
+  }
+
+  /**
+   * Updates the page's main title (the <h1>); used after a map click.
+   *
+   * @param {string} locationName - The name of the selected location.
+   */
+  renderPageTitle(locationName) {
+    const pageTitle = this.queryElement(this.config.dom.pageTitleSelector);
+    if (pageTitle) {
+      pageTitle.textContent = `${locationName} ${this.config.text.headingSuffix}`;
+    }
+  }
+}
+
+/**
+ * Fills the 'Now' and 'Today' overview cards.
+ *
+ * Parent class: UiComponent.
+ */
+class OverviewCards extends UiComponent {
+  /**
+   * Updates the 'Now' and 'Today' cards from a forecast response.
+   *
+   * @param {Object} apiData - Forecast data returned by WeatherApi.fetchWeatherData().
+   * @param {Object} [apiData.current] - Current conditions (temperature, humidity, wind...).
+   * @param {Object} [apiData.daily] - Daily values; index 0 is today.
+   */
+  render(apiData) {
+    // Prevents execution if API payload is undefined or null.
+    if (!apiData) return;
+
+    // Destructures current and daily data objects from the main API response payload.
+    const current = apiData.current || {};
+    const daily = apiData.daily || {};
+
+    const temp = current.temperature_2m !== undefined ? Math.round(current.temperature_2m) : "--";
+    const feelsLike = current.apparent_temperature !== undefined ? Math.round(current.apparent_temperature) : "--";
+    const humidity = current.relative_humidity_2m !== undefined ? current.relative_humidity_2m : "--";
+    const rainfall = current.precipitation !== undefined ? current.precipitation : 0;
+    const windSpeed = current.wind_speed_10m !== undefined ? Math.round(current.wind_speed_10m) : "--";
+
+    const windDir = WeatherFormatter.getWindDirectionName(current.wind_direction_10m);
+    const iconClass = WeatherIcons.getNowIconClass(current);
+
+    // NOW CARD updates
+    this.setText("nowTemp", `${temp}°`);
+    this.setText("nowFeelsLike", `${feelsLike}°`);
+    this.setText("nowHumidity", `Humidity: ${humidity}%`);
+    this.setText("nowRainfall", `Rainfall since 9am: ${rainfall}mm`);
+    this.setText("nowWind", `Wind: ${windDir} ${windSpeed} km/h`);
+
+    // Obtains reference to the primary weather condition icon element.
+    const iconEl = this.getElement("nowIcon");
+    // Applies dynamic icon CSS classes if the DOM element exists.
+    if (iconEl) iconEl.className = `bi ${iconClass} display-2 me-3`;
+
+    // TODAY CARD updates: min/max temperatures, sunrise/sunset, UV and rain probability.
+    if (daily.temperature_2m_min && daily.temperature_2m_min[0] !== undefined) {
+      this.setText("todayMin", `${Math.round(daily.temperature_2m_min[0])}°`);
+    }
+    if (daily.temperature_2m_max && daily.temperature_2m_max[0] !== undefined) {
+      this.setText("todayMax", `${Math.round(daily.temperature_2m_max[0])}°`);
+    }
+    if (daily.sunrise && daily.sunrise[0]) {
+      this.setText("todaySunrise", `Sunrise: ${WeatherFormatter.formatTime12h(daily.sunrise[0])}`);
+    }
+    if (daily.sunset && daily.sunset[0]) {
+      this.setText("todaySunset", `Sunset: ${WeatherFormatter.formatTime12h(daily.sunset[0])}`);
+    }
+    if (daily.uv_index_max && daily.uv_index_max[0] !== undefined) {
+      this.setText("todayUv", `UV Alert: ${daily.uv_index_max[0]}`);
+    }
+    if (daily.precipitation_probability_max && daily.precipitation_probability_max[0] !== undefined) {
+      this.setText("todayRainChance", `Rain chance: ${daily.precipitation_probability_max[0]}%`);
+    }
+  }
+}
+
+
+/* ==========================================================================
+ * CONTROLLER CLASS
+ * ========================================================================== */
+
+/**
+ * The controller of the application. It creates the data and display objects
+ * and connects them:  user action -> API (fetch) -> display components / map.
+ * It contains no fetching code and no page-drawing code of its own.
+ *
+ * Parent class: none.
+ */
+class WeatherDashboard {
+  /** Shared settings from config.js. */
+  #config;
+
+  /** Fetches weather forecasts. */
+  #weatherApi;
+
+  /** Shows the location name in the heading and page title. */
+  #heading;
+
+  /**
+   * Every component that is redrawn when a forecast loads. They all extend
+   * UiComponent, so the dashboard just calls render() on each one (polymorphism).
+   */
+  #forecastComponents;
+
+  /**
+   * Creates the dashboard and every object it uses.
+   *
+   * @param {Object} [config=CONFIG] - Configuration object; defaults to the global CONFIG from config.js.
+   */
+  constructor(config = CONFIG) {
+    this.#config = config;
+
+    // Data access objects
+    this.#weatherApi = new WeatherApi(config);
+
+    // Map and display objects
+    this.#heading = new LocationHeading(config);
+
+    // The components redrawn for every forecast, in the order they are drawn.
+    this.#forecastComponents = [
+      new OverviewCards(config)
+    ];
+  }
+
+  /**
+   * Starts the application: loads the default forecast and attaches all event listeners.
+   */
+  init() {
+    // Triggers initial forecast fetch for the default location.
+    this.loadForecast();
+  }
+
+  /**
+   * Fetches the forecast for a location and redraws every part of the dashboard.
+   *
+   * @param {number} [lat] - Latitude; defaults to the default location in CONFIG.
+   * @param {number} [lon] - Longitude; defaults to the default location in CONFIG.
+   * @param {string} [locationName] - Name shown in the heading; defaults to the default location in CONFIG.
+   * @returns {Promise<void>} Resolves when the page has been updated.
+   */
+  async loadForecast(
+    lat = this.#config.defaultLocation.latitude,
+    lon = this.#config.defaultLocation.longitude,
+    locationName = this.#config.defaultLocation.name
+  ) {
+    try {
+      // Fetch full forecast dataset for given latitude and longitude.
+      const data = await this.#weatherApi.fetchWeatherData(lat, lon);
+      // Stops here if the request failed (the error has already been logged).
+      if (!data) return;
+
+      this.#heading.render(locationName);
+
+      // Ask every forecast component to redraw itself with the fresh API data.
+      this.#forecastComponents.forEach(component => component.render(data));
+    } catch (error) {
+      console.error("Failed to load forecast:", error);
+    }
+  }
+}
+
+
+/* ==========================================================================
  * START-UP
  * ========================================================================== */
 

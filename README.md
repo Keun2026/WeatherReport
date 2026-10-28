@@ -17,3 +17,7 @@ This is my first GitHub deployment for my assessment.
 
 ## Add ApiClient parent class and WeatherApi (27/10/2026)
 - `app.js`: As above
+
+## Add UiComponent, LocationHeading, Overviewcard and WeatherDashboard, and edit config.js (28/10/2026)
+- `app.js`: As above
+- `config.js`: Add dom

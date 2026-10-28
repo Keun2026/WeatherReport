@@ -104,4 +104,28 @@ const CONFIG = deepFreeze({
     /** Alert shown when a searched place cannot be found. */
     locationNotFound: "Location not found."
   },
+
+  /** HTML element IDs and selectors the app reads from or writes to. Change these if the HTML changes. */
+  dom: {
+    /** ID of the heading that shows the current location name. */
+    cityName: "cityName",
+    /** CSS selector of the page's main title, updated after a map click. */
+    pageTitleSelector: "h1",
+
+    /** IDs of the 'Now' overview card elements. */
+    nowTemp: "nowTemp",
+    nowFeelsLike: "nowFeelsLike",
+    nowHumidity: "nowHumidity",
+    nowRainfall: "nowRainfall",
+    nowWind: "nowWind",
+    nowIcon: "nowIcon",
+
+    /** IDs of the 'Today' overview card elements. */
+    todayMin: "todayMin",
+    todayMax: "todayMax",
+    todaySunrise: "todaySunrise",
+    todaySunset: "todaySunset",
+    todayUv: "todayUv",
+    todayRainChance: "todayRainChance",
+  }
 });
