@@ -89,6 +89,12 @@ const CONFIG = deepFreeze({
     name: "Melbourne, Victoria"
   },
 
+  /** How much forecast data is displayed. */
+  forecast: {
+    /** Number of hourly cards shown for a search or the default load. */
+    hourlyCardsToShow: 12,
+  },
+
   /** Locale codes that control how dates and times are written. */
   locale: {
     /** Locale used for long dates in weather warnings (Australian English). */
@@ -127,5 +133,8 @@ const CONFIG = deepFreeze({
     todaySunset: "todaySunset",
     todayUv: "todayUv",
     todayRainChance: "todayRainChance",
+    // step 6
+    /** IDs of the forecast containers. */
+    hourlyContainer: "hourlyContainer",
   }
 });

@@ -21,3 +21,7 @@ This is my first GitHub deployment for my assessment.
 ## Add UiComponent, LocationHeading, Overviewcard and WeatherDashboard, and edit config.js (28/10/2026)
 - `app.js`: As above
 - `config.js`: Add dom
+
+## Add HourlyForecase, Hourly cards appear, and edit config.js (29/10/2026)
+- `app.js`: As above
+- `config.js`: Add hourlyContainer

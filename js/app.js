@@ -513,6 +513,94 @@ class OverviewCards extends UiComponent {
     }
   }
 }
+// step 6
+/**
+ * Draws the horizontally scrolling row of hourly forecast cards.
+ *
+ * Parent class: UiComponent.
+ */
+class HourlyForecast extends UiComponent {
+  /**
+   * Draws the next hours of the forecast, starting from the current hour.
+   * How many cards are shown is set by CONFIG.forecast.hourlyCardsToShow.
+   *
+   * @param {Object} apiData - Forecast data returned by WeatherApi.fetchWeatherData().
+   * @param {Object} apiData.hourly - Hourly values (time, temperature_2m, precipitation_probability, is_day, weather_code).
+   * @param {Object} [apiData.current] - Current conditions; its time marks where the cards start.
+   */
+  render(apiData) {
+    // Obtains container DOM element reference for injecting hourly item HTML.
+    const hourlyContainer = this.getElement("hourlyContainer");
+    if (!hourlyContainer || !apiData || !apiData.hourly || !apiData.hourly.time) return;
+
+    const hourlyData = apiData.hourly;
+
+    // Use the API's current time for the target city (e.g., "2026-10-01T23:00")
+    // This automatically adjusts to any global city's local time.
+    const currentCityTimeString = apiData.current && apiData.current.time ? apiData.current.time : null;
+
+    let startIndex = -1;
+    if (currentCityTimeString) {
+      // Find the index in the hourly array that matches or comes right after the city's current local time
+      startIndex = hourlyData.time.findIndex(timeStr => timeStr >= currentCityTimeString);
+    }
+
+    // Fallback if currentCityTimeString is missing
+    if (startIndex === -1) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      const hour = String(now.getHours()).padStart(2, "0");
+      const currentHourStr = `${year}-${month}-${day}T${hour}:00`;
+      startIndex = hourlyData.time.findIndex(timeStr => timeStr >= currentHourStr);
+    }
+
+    if (startIndex === -1) startIndex = 0;
+
+    let itemsHtml = "";
+    const hoursToShow = this.config.forecast.hourlyCardsToShow;
+
+    // Iterates through the next hourly entries starting from calculated index.
+    for (let i = startIndex; i < Math.min(startIndex + hoursToShow, hourlyData.time.length); i++) {
+      const timeStr = hourlyData.time[i]; // e.g., "2026-10-01T23:00"
+
+      // Extract the hour portion directly from the string (characters 11 and 12)
+      const hourPart = parseInt(timeStr.substring(11, 13), 10);
+
+      // Format into 12-hour AM/PM time
+      const ampm = hourPart >= 12 ? "PM" : "AM";
+      let formattedHour = hourPart % 12;
+      formattedHour = formattedHour ? formattedHour : 12; // convert 0 to 12
+
+      const isNow = (i === startIndex);
+      const hourLabel = isNow ? "Now" : `${formattedHour} ${ampm}`;
+
+      const temp = Math.round(hourlyData.temperature_2m[i]);
+      const rainProb = hourlyData.precipitation_probability ? hourlyData.precipitation_probability[i] : 0;
+
+      const isDay = hourlyData.is_day ? hourlyData.is_day[i] : 1;
+      const weatherCode = hourlyData.weather_code ? hourlyData.weather_code[i] : 0;
+
+      const iconClass = WeatherIcons.getNowIconClass({
+        weather_code: weatherCode,
+        precipitation: 0,
+        is_day: isDay
+      });
+
+      // Appends HTML template string for current hourly column card.
+      itemsHtml += `
+        <div class="text-center px-3 py-2 border-end flex-shrink-0" style="min-width: 85px;">
+          <small class="text-muted d-block fw-semibold">${hourLabel}</small>
+          <i class="bi ${iconClass} fs-4 my-1 d-block"></i>
+          <span class="fw-bold d-block">${temp}°</span>
+          <small class="text-muted"><i class="bi bi-droplet-fill text-primary small"></i> ${rainProb}%</small>
+        </div>
+      `;
+    }
+    hourlyContainer.innerHTML = itemsHtml;
+  }
+}
 
 
 /* ==========================================================================
@@ -558,6 +646,7 @@ class WeatherDashboard {
 
     // The components redrawn for every forecast, in the order they are drawn.
     this.#forecastComponents = [
+      new OverviewCards(config),
       new OverviewCards(config)
     ];
   }
