@@ -22,6 +22,10 @@ This is my first GitHub deployment for my assessment.
 - `app.js`: As above
 - `config.js`: Add dom
 
-## Add HourlyForecase, Hourly cards appear, and edit config.js (29/10/2026)
+## Add HourlyForecast, Hourly cards appear, and edit config.js (29/10/2026)
 - `app.js`: As above
 - `config.js`: Add hourlyContainer
+
+## Add DailyForecast, Daily cards appear, and edit config.js (30/10/2026)
+- `app.js`: As above
+- `config.js`: Add dailyContainer

@@ -133,8 +133,9 @@ const CONFIG = deepFreeze({
     todaySunset: "todaySunset",
     todayUv: "todayUv",
     todayRainChance: "todayRainChance",
-    // step 6
+
     /** IDs of the forecast containers. */
     hourlyContainer: "hourlyContainer",
+    dailyContainer: "dailyContainer",
   }
 });

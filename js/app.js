@@ -513,7 +513,7 @@ class OverviewCards extends UiComponent {
     }
   }
 }
-// step 6
+
 /**
  * Draws the horizontally scrolling row of hourly forecast cards.
  *
@@ -602,6 +602,62 @@ class HourlyForecast extends UiComponent {
   }
 }
 
+/**
+ * Draws the multi-day forecast cards (starting from tomorrow).
+ *
+ * Parent class: UiComponent.
+ */
+class DailyForecast extends UiComponent {
+  /** Weekday names, indexed to match JavaScript's Date.getDay() (0 = Sunday). */
+  static #DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  /**
+   * Draws one card per upcoming day.
+   *
+   * @param {Object} apiData - Forecast data returned by WeatherApi.fetchWeatherData().
+   * @param {Object} apiData.daily - Daily values (time, temperature_2m_max/min, precipitation_probability_max...).
+   */
+  render(apiData) {
+    const dailyData = apiData && apiData.daily;
+    // Obtains daily forecast container element reference.
+    const dailyContainer = this.getElement("dailyContainer");
+    if (!dailyContainer || !dailyData || !dailyData.time) return;
+
+    let cardsHtml = '<div class="row row-cols-2 row-cols-md-4 row-cols-lg-6 g-3">';
+
+    // Loops through upcoming daily weather array elements starting from index 1 (Tomorrow).
+    for (let i = 1; i < dailyData.time.length; i++) {
+      const dateObj = new Date(dailyData.time[i] + "T00:00:00");
+      const dayName = i === 1 ? "Tomorrow" : DailyForecast.#DAY_NAMES[dateObj.getDay()];
+      const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+      const maxTemp = Math.round(dailyData.temperature_2m_max[i]);
+      const minTemp = Math.round(dailyData.temperature_2m_min[i]);
+
+      const rainChance = dailyData.precipitation_probability_max ? dailyData.precipitation_probability_max[i] : 0;
+
+      // Determine icon directly based on the rain chance percentage for daily cards
+      const iconClass = WeatherIcons.getDailyIconClass(rainChance);
+
+      cardsHtml += `
+        <div class="col">
+          <div class="card h-100 border-0 shadow-sm text-center p-3 rounded-4 bg-white">
+            <div class="fw-bold text-dark small">${dayName}</div>
+            <div class="text-muted small mb-2">${dateStr}</div>
+            <i class="bi ${iconClass} fs-2 my-2 d-block"></i>
+            <div class="fw-bold fs-5 text-dark">${maxTemp}° <span class="text-muted fs-6 fw-normal">${minTemp}°</span></div>
+            <small class="text-primary fw-semibold d-block mt-2">
+              <i class="bi bi-droplet-fill me-1"></i>${rainChance}%
+            </small>
+          </div>
+        </div>
+      `;
+    }
+
+    cardsHtml += "</div>";
+    dailyContainer.innerHTML = cardsHtml;
+  }
+}
+
 
 /* ==========================================================================
  * CONTROLLER CLASS
@@ -647,7 +703,8 @@ class WeatherDashboard {
     // The components redrawn for every forecast, in the order they are drawn.
     this.#forecastComponents = [
       new OverviewCards(config),
-      new OverviewCards(config)
+      new HourlyForecast(config),
+      new DailyForecast(config)
     ];
   }
 
@@ -693,7 +750,7 @@ class WeatherDashboard {
  * START-UP
  * ========================================================================== */
 
-// Single initialization point: runs once the page has loaded.
+// Single initialization point: creates the dashboard once the page has loaded.
 document.addEventListener("DOMContentLoaded", () => {
-  // The WeatherDashboard is created here once it has been added.
+  new WeatherDashboard().init();
 });
