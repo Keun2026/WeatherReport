@@ -29,3 +29,7 @@ This is my first GitHub deployment for my assessment.
 ## Add DailyForecast, Daily cards appear, and edit config.js (30/10/2026)
 - `app.js`: As above
 - `config.js`: Add dailyContainer
+
+## Add WeatherWarnings, Wind warning panel, and edit config.js (31/10/2016)
+- `app.js`: As above
+- `config.js`: Add the weather warning elements

@@ -95,6 +95,16 @@ const CONFIG = deepFreeze({
     hourlyCardsToShow: 12,
   },
 
+  /** Weather warning rules. */
+  warnings: {
+    /** Wind speed (km/h) at or above which a strong wind warning is shown. */
+    windThresholdKmh: 30,
+    /** Headline of the strong wind warning. */
+    windTitle: "Strong Wind Warning for Coastal & Central Regions",
+    /** Name of the agency credited on the warning. */
+    windAgency: "Bureau of Meteorology"
+  },
+
   /** Locale codes that control how dates and times are written. */
   locale: {
     /** Locale used for long dates in weather warnings (Australian English). */
@@ -137,5 +147,10 @@ const CONFIG = deepFreeze({
     /** IDs of the forecast containers. */
     hourlyContainer: "hourlyContainer",
     dailyContainer: "dailyContainer",
+
+    /** IDs of the weather warning elements. */
+    warningSection: "warningSection",
+    warningTitle: "warningTitle",
+    warningContent: "warningContent",
   }
 });

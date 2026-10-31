@@ -658,6 +658,96 @@ class DailyForecast extends UiComponent {
   }
 }
 
+/**
+ * Checks the forecast against the warning rules in CONFIG.warnings and
+ * shows or hides the weather warning panel.
+ *
+ * Parent class: UiComponent.
+ */
+class WeatherWarnings extends UiComponent {
+  /**
+   * Builds the list of active warnings and displays them (or hides the panel if there are none).
+   *
+   * @param {Object} apiData - Forecast data returned by WeatherApi.fetchWeatherData().
+   * @param {Object} [apiData.daily] - Daily values; its first date is used as the issue date.
+   * @param {Object} [apiData.hourly] - Hourly values; wind speeds are checked against the threshold.
+   */
+  render(apiData) {
+    // Selects DOM elements for warning section wrapper, collapsible header, and inner content container.
+    const warningSection = this.getElement("warningSection");
+    const warningTitle = this.getElement("warningTitle");
+    const warningContent = this.getElement("warningContent");
+
+    // Exits early if warning section component does not exist in DOM.
+    if (!warningSection) return;
+
+    // Destructures daily and hourly records from API response data.
+    const daily = apiData.daily || {};
+    const hourly = apiData.hourly || {};
+    const rules = this.config.warnings;
+
+    // Extracts hourly wind speeds and calculates maximum gust speed across forecast period.
+    const windArray = hourly.wind_speed_10m || hourly.windspeed_10m || [];
+    const maxWind = windArray.length > 0 ? Math.max(...windArray) : 0;
+    const todayDate = daily.time ? daily.time[0] : new Date().toISOString().split("T")[0];
+    const formattedToday = WeatherFormatter.formatWarningDate(todayDate);
+
+    const activeWarnings = [];
+
+    // Evaluates if wind speeds equal or exceed the severe weather threshold from CONFIG.
+    if (maxWind >= rules.windThresholdKmh) {
+      // Pushes constructed warning data object into active warnings array.
+      activeWarnings.push({
+        title: rules.windTitle,
+        agency: rules.windAgency,
+        summary: `Peak wind gusts up to ${Math.round(maxWind)} km/h recorded.`,
+        issued: `Issued for ${formattedToday}`,
+        details: `<p class="mb-2">Strong wind conditions active across coastal zones reaching speeds of ${Math.round(maxWind)} km/h.</p>`
+      });
+    }
+
+    // Displays warning panel if active warnings exist; hides panel otherwise.
+    if (activeWarnings.length > 0) {
+      // Unhides warning section banner by removing Bootstrap 'd-none' utility class.
+      warningSection.classList.remove("d-none");
+      // Updates warning title text with active warning count.
+      if (warningTitle) warningTitle.textContent = `View ${activeWarnings.length} weather warning${activeWarnings.length > 1 ? "s" : ""}`;
+
+      // Renders expandable accordion HTML components for each active warning item.
+      if (warningContent) {
+        // Maps active warning objects into markup cards and updates container inner HTML.
+        warningContent.innerHTML = activeWarnings.map((w, index) => `
+          <div class="card border-0 mb-2 shadow-sm">
+            <button
+              class="btn text-start p-3 fw-bold border-0 d-flex align-items-center bg-white rounded w-100 collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseAlert${index}"
+              aria-expanded="false"
+            >
+              <i class="bi bi-caret-down-fill me-2 fs-6 toggle-arrow"></i>
+              <span>${w.title}</span>
+            </button>
+
+            <div class="collapse border-top" id="collapseAlert${index}">
+              <div class="p-3 bg-white text-dark small">
+                <p class="mb-1 text-secondary fw-semibold">${w.agency}</p>
+                <p class="fw-bold mb-2">${w.summary}</p>
+                <p class="text-muted mb-3">${w.issued}</p>
+                <hr class="my-2">
+                <div>${w.details}</div>
+              </div>
+            </div>
+          </div>
+        `).join("");
+      }
+    } else {
+      // Hides warning section banner when no warnings are active.
+      warningSection.classList.add("d-none");
+    }
+  }
+}
+
 
 /* ==========================================================================
  * CONTROLLER CLASS
