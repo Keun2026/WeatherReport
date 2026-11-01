@@ -93,6 +93,8 @@ const CONFIG = deepFreeze({
   forecast: {
     /** Number of hourly cards shown for a search or the default load. */
     hourlyCardsToShow: 12,
+    /** Number of hours plotted on the temperature trend chart. */
+    chartHours: 24,
   },
 
   /** Weather warning rules. */
@@ -105,10 +107,24 @@ const CONFIG = deepFreeze({
     windAgency: "Bureau of Meteorology"
   },
 
+  /** Appearance of the Chart.js temperature trend chart. */
+  chart: {
+    /** Dataset label (also used in tooltips). */
+    label: "Temperature (°C)",
+    /** Colour of the line and the points. */
+    lineColor: "#0d6efd",
+    /** Colour of the shaded area under the line. */
+    fillColor: "rgba(13, 110, 253, 0.08)",
+    /** Colour of the horizontal grid lines. */
+    gridColor: "rgba(0, 0, 0, 0.05)"
+  },
+
   /** Locale codes that control how dates and times are written. */
   locale: {
     /** Locale used for long dates in weather warnings (Australian English). */
     warningDateLocale: "en-AU",
+    /** Locale used for hour labels on the chart and the map-click forecast cards. */
+    hourLabelLocale: "en-US"
   },
 
   /** Text shown to the user. */
@@ -152,5 +168,8 @@ const CONFIG = deepFreeze({
     warningSection: "warningSection",
     warningTitle: "warningTitle",
     warningContent: "warningContent",
+
+    /** ID of the canvas element the temperature chart is drawn on. */
+    tempTrendChart: "tempTrendChart",
   }
 });

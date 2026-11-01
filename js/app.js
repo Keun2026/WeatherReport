@@ -748,6 +748,104 @@ class WeatherWarnings extends UiComponent {
   }
 }
 
+/**
+ * Draws the temperature trend line chart with the Chart.js library.
+ *
+ * Parent class: UiComponent.
+ */
+class TemperatureChart extends UiComponent {
+  /** The Chart.js chart currently on screen (null until the first render); kept so it can be destroyed before redrawing. */
+  #chart = null;
+
+  /**
+   * Draws a temperature line chart for the next hours (CONFIG.forecast.chartHours),
+   * replacing any chart drawn earlier.
+   *
+   * @param {Object} apiData - Forecast data from either weather request.
+   * @param {Object} apiData.hourly - Hourly values (time and temperature_2m).
+   */
+  render(apiData) {
+    const hourlyData = apiData && apiData.hourly;
+    // Fetches HTML5 canvas element context by its configured ID.
+    const ctx = this.getElement("tempTrendChart");
+    // Exits method if canvas element, hourly data, or time sequence is missing.
+    if (!ctx || !hourlyData || !hourlyData.time) return;
+
+    const style = this.config.chart;
+
+    // Creates Date object representing current timestamp.
+    const now = new Date();
+
+    // Determines starting index in hourly timeline matching current hour.
+    let startIndex = hourlyData.time.findIndex(timeStr => {
+      const timeObj = new Date(timeStr);
+      return timeObj.getHours() === now.getHours() && timeObj.getDate() === now.getDate();
+    });
+
+    // Defaults start index to 0 if match is not found.
+    if (startIndex === -1) startIndex = 0;
+
+    // Arrays to store chart X-axis labels and Y-axis temperature values.
+    const labels = [];
+    const temps = [];
+
+    // Populates data points for the configured number of sequential hourly intervals.
+    const endIndex = Math.min(startIndex + this.config.forecast.chartHours, hourlyData.time.length);
+    for (let i = startIndex; i < endIndex; i++) {
+      // Parses current hourly date-time string.
+      const timeObj = new Date(hourlyData.time[i]);
+      const isNow = (i === startIndex);
+      // Pushes formatted hour string to labels and rounded temperature value to dataset.
+      labels.push(isNow ? "Now" : timeObj.toLocaleTimeString(this.config.locale.hourLabelLocale, { hour: "numeric", hour12: true }));
+      temps.push(Math.round(hourlyData.temperature_2m[i]));
+    }
+
+    // Destroys pre-existing Chart.js instance to prevent memory leaks and canvas overlaps.
+    if (this.#chart) {
+      this.#chart.destroy();
+    }
+
+    // Instantiates new Chart.js smooth area line chart with custom styling and tooltips.
+    this.#chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: style.label,
+          data: temps,
+          borderColor: style.lineColor,
+          backgroundColor: style.fillColor,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: style.lineColor,
+          pointRadius: 3,
+          pointHoverRadius: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => ` ${context.parsed.y}°C`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            grid: { color: style.gridColor },
+            ticks: { callback: (value) => `${value}°` }
+          }
+        }
+      }
+    });
+  }
+}
+
 
 /* ==========================================================================
  * CONTROLLER CLASS
@@ -770,6 +868,9 @@ class WeatherDashboard {
   /** Shows the location name in the heading and page title. */
   #heading;
 
+  /** The temperature chart (also listed in #forecastComponents; kept separately for map clicks). */
+  #chart;
+
   /**
    * Every component that is redrawn when a forecast loads. They all extend
    * UiComponent, so the dashboard just calls render() on each one (polymorphism).
@@ -789,12 +890,15 @@ class WeatherDashboard {
 
     // Map and display objects
     this.#heading = new LocationHeading(config);
+    this.#chart = new TemperatureChart(config);
 
     // The components redrawn for every forecast, in the order they are drawn.
     this.#forecastComponents = [
       new OverviewCards(config),
+      new WeatherWarnings(config),
       new HourlyForecast(config),
-      new DailyForecast(config)
+      new DailyForecast(config),
+      this.#chart
     ];
   }
 

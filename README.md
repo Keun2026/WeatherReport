@@ -33,3 +33,8 @@ This is my first GitHub deployment for my assessment.
 ## Add WeatherWarnings, Wind warning panel, and edit config.js (31/10/2016)
 - `app.js`: As above
 - `config.js`: Add the weather warning elements
+
+## Add TemperatureChart, Temperature chart, and edit config.js (1/11/2026)
+- `app.js`: As above
+- `config.js`: Add tempTrendChart
+- `index.html`: Add Chart.js library link
