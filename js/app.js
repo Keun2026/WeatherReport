@@ -20,6 +20,10 @@
 if (typeof CONFIG === "undefined") {
   throw new Error("config.js must be loaded before app.js");
 }
+// Stops the script early, with a clear message, if map.js was not loaded first.
+if (typeof WeatherMap === "undefined") {
+  throw new Error("map.js must be loaded before app.js");
+}
 
 
 /* ==========================================================================
@@ -865,6 +869,9 @@ class WeatherDashboard {
   /** Fetches weather forecasts. */
   #weatherApi;
 
+  /** The Leaflet map. */
+  #map;
+
   /** Shows the location name in the heading and page title. */
   #heading;
 
@@ -889,6 +896,7 @@ class WeatherDashboard {
     this.#weatherApi = new WeatherApi(config);
 
     // Map and display objects
+    this.#map = new WeatherMap(config);
     this.#heading = new LocationHeading(config);
     this.#chart = new TemperatureChart(config);
 
@@ -908,6 +916,9 @@ class WeatherDashboard {
   init() {
     // Triggers initial forecast fetch for the default location.
     this.loadForecast();
+
+    // Map clicks
+    this.#map.onClick((lat, lng) => this.#handleMapClick(lat, lng));
   }
 
   /**
@@ -936,6 +947,17 @@ class WeatherDashboard {
     } catch (error) {
       console.error("Failed to load forecast:", error);
     }
+  }
+
+  /**
+   * Called when the user clicks the map: marks the point.
+   *
+   * @param {number} lat - Latitude of the click.
+   * @param {number} lng - Longitude of the click.
+   */
+  #handleMapClick(lat, lng) {
+    // Move or create marker
+    this.#map.setMarker(lat, lng);
   }
 }
 

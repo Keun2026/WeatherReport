@@ -89,6 +89,22 @@ const CONFIG = deepFreeze({
     name: "Melbourne, Victoria"
   },
 
+  /** Leaflet map settings. */
+  map: {
+    /** Zoom level used when the map first loads. */
+    initialZoom: 10,
+    /** Zoom level used when moving the map to a chosen location. */
+    locationZoom: 10,
+    /** Highest zoom level the map tiles support. */
+    maxZoom: 19,
+    /** URL template of the OpenStreetMap tile images. */
+    tileUrl: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    /** Copyright text shown in the corner of the map (required by OpenStreetMap). */
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    /** Milliseconds to wait before refreshing the map size after it is moved. */
+    refreshDelayMs: 100
+  },
+
   /** How much forecast data is displayed. */
   forecast: {
     /** Number of hourly cards shown for a search or the default load. */
@@ -139,6 +155,8 @@ const CONFIG = deepFreeze({
 
   /** HTML element IDs and selectors the app reads from or writes to. Change these if the HTML changes. */
   dom: {
+    /** ID of the element that holds the Leaflet map. */
+    map: "map",
     /** ID of the heading that shows the current location name. */
     cityName: "cityName",
     /** CSS selector of the page's main title, updated after a map click. */
