@@ -39,7 +39,8 @@ This is my first GitHub deployment for my assessment.
 - `config.js`: Add tempTrendChart
 - `index.html`: Add Chart.js library link
 
-## Add WeatherMap (map.js) and marder on map click, map with clickable marker
+## Add WeatherMap (map.js) and marker on map click, map with clickable marker (2/11/2026)
 - `map.js`: As above
-- `config.js`: Add tempTrendChart
-- `index.html`: Add Chart.js library link
+- `config.js`: Updated related WeatherMap
+- `app.js`: Updated related WeatherMap
+- `index.html`: Added CSS link related Leaflet
