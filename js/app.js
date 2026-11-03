@@ -337,6 +337,74 @@ class WeatherApi extends ApiClient {
   }
 }
 
+/**
+ * Converts map coordinates into a readable place name using OpenStreetMap
+ * Nominatim (reverse geocoding). Remembers names it has already looked up.
+ *
+ * Parent class: ApiClient.
+ */
+class ReverseGeocodingApi extends ApiClient {
+  /** Shared settings from config.js (response format, fallback name). */
+  #config;
+
+  /** Place names already looked up, stored by "lat,lng" so the same click is not requested twice. */
+  #locationCache = new Map();
+
+  /**
+   * Creates the reverse geocoding client.
+   *
+   * @param {Object} [config=CONFIG] - Configuration object; defaults to the global CONFIG from config.js.
+   */
+  constructor(config = CONFIG) {
+    super(config.api.reverseGeocodingUrl);
+    this.#config = config;
+  }
+
+  /**
+   * Looks up a readable place name for a pair of coordinates.
+   *
+   * @param {number} lat - Latitude of the point.
+   * @param {number} lng - Longitude of the point.
+   * @returns {Promise<string>} A name such as "Richmond, Melbourne, AU", or the fallback
+   *                            name from CONFIG if no name could be found.
+   */
+  async getCityNameFromCoords(lat, lng) {
+    // Returns the stored name straight away if this exact point was already looked up.
+    const cacheKey = `${lat},${lng}`;
+    if (this.#locationCache.has(cacheKey)) return this.#locationCache.get(cacheKey);
+
+    try {
+      const nominatimUrl = `${this.baseUrl}?format=${this.#config.api.responseFormat}&lat=${lat}&lon=${lng}`;
+      const data = await this.getJson(nominatimUrl);
+
+      if (data && data.address) {
+        // Extract granular details (suburb/neighborhood first, then city/town, then country)
+        const suburb = data.address.suburb || data.address.neighbourhood || data.address.city_district || "";
+        const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+        const country = data.address.country_code ? data.address.country_code.toUpperCase() : "";
+
+        // Build a smart, specific location hierarchy
+        const locationParts = [];
+
+        if (suburb) locationParts.push(suburb);
+        if (city && city !== suburb) locationParts.push(city);
+        if (country) locationParts.push(country);
+
+        // If we found valid parts, join them (e.g., "Richmond, Melbourne, AU")
+        if (locationParts.length > 0) {
+          const name = locationParts.join(", ");
+          this.#locationCache.set(cacheKey, name);
+          return name;
+        }
+      }
+    } catch (err) {
+      console.error("Geocoding lookup failed:", err);
+    }
+
+    return this.#config.text.fallbackLocationName;
+  }
+}
+
 
 /* ==========================================================================
  * DISPLAY CLASSES
@@ -869,6 +937,9 @@ class WeatherDashboard {
   /** Fetches weather forecasts. */
   #weatherApi;
 
+  /** Converts map coordinates into a place name. */
+  #reverseGeocodingApi;
+
   /** The Leaflet map. */
   #map;
 
@@ -894,6 +965,7 @@ class WeatherDashboard {
 
     // Data access objects
     this.#weatherApi = new WeatherApi(config);
+    this.#reverseGeocodingApi = new ReverseGeocodingApi(config);
 
     // Map and display objects
     this.#map = new WeatherMap(config);
@@ -954,10 +1026,20 @@ class WeatherDashboard {
    *
    * @param {number} lat - Latitude of the click.
    * @param {number} lng - Longitude of the click.
+   * @returns {Promise<void>} Resolves when the place name has been shown.
    */
-  #handleMapClick(lat, lng) {
-    // Move or create marker
+  async #handleMapClick(lat, lng) {
+    // 1. Move or create marker
     this.#map.setMarker(lat, lng);
+
+    // 2. Fetch the actual city name from coordinates
+    const locationName = await this.#reverseGeocodingApi.getCityNameFromCoords(lat, lng);
+
+    // 3. Update the popup
+    this.#map.setPopup(`<b>${locationName}</b><br>Lat: ${lat.toFixed(2)}, Lng: ${lng.toFixed(2)}`);
+
+    // 4. Update the page title directly
+    this.#heading.renderPageTitle(locationName);
   }
 }
 
