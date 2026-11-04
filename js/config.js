@@ -111,6 +111,10 @@ const CONFIG = deepFreeze({
     hourlyCardsToShow: 12,
     /** Number of hours plotted on the temperature trend chart. */
     chartHours: 24,
+    /** Number of hourly cards shown after a map click. */
+    mapClickHourlyHours: 24,
+    /** Number of daily cards shown after a map click (starting from tomorrow). */
+    mapClickDailyDays: 6
   },
 
   /** Weather warning rules. */
@@ -189,5 +193,11 @@ const CONFIG = deepFreeze({
 
     /** ID of the canvas element the temperature chart is drawn on. */
     tempTrendChart: "tempTrendChart",
+
+    /** CSS selectors used by the map-click renderer to find the 'Today' card fields. */
+    legacyTodayMin: ".today-min, #todayMin, .min-temp",
+    legacyTodayMax: ".today-max, #todayMax, .max-temp",
+    legacySunrise: ".sunrise",
+    legacySunset: ".sunset"
   }
 });

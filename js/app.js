@@ -821,6 +821,184 @@ class WeatherWarnings extends UiComponent {
 }
 
 /**
+ * Draws the weather cards after the user clicks the map. It uses a simpler
+ * layout than the cards shown for searches (OverviewCards, HourlyForecast
+ * and DailyForecast), and reads the smaller dataset requested by
+ * WeatherApi.fetchWeatherByCoords().
+ *
+ * Parent class: UiComponent.
+ */
+class MapClickRenderer extends UiComponent {
+  /**
+   * Updates the 'Now' card, the 'Today' card, the hourly cards and the daily cards.
+   *
+   * @param {Object} data - Forecast data returned by WeatherApi.fetchWeatherByCoords().
+   * @param {Object} data.current - Current conditions (temperature, humidity, wind, time...).
+   * @param {Object} [data.hourly] - Hourly values.
+   * @param {Object} [data.daily] - Daily values.
+   */
+  render(data) {
+    this.#renderNowCard(data.current);
+    if (data.daily) this.#renderTodayCard(data.daily);
+    if (data.hourly) this.#renderHourly(data);
+    if (data.daily) this.#renderDaily(data);
+  }
+
+  /**
+   * Fills the 'Now' card.
+   *
+   * @param {Object} current - Current conditions from the forecast response.
+   */
+  #renderNowCard(current) {
+    this.getElement("nowTemp").textContent = `${Math.round(current.temperature_2m)}°`;
+    const feelsLikeEl = this.getElement("nowFeelsLike");
+    if (feelsLikeEl) feelsLikeEl.textContent = `Feels like ${Math.round(current.apparent_temperature)}°`;
+
+    this.getElement("nowHumidity").textContent = `Humidity: ${current.relative_humidity_2m}%`;
+    this.getElement("nowRainfall").textContent = `Rainfall: ${current.precipitation}mm`;
+    this.getElement("nowWind").textContent = `Wind: N ${current.wind_speed_10m} km/h`;
+  }
+
+  /**
+   * Fills the 'Today' card (minimum, maximum, sunrise and sunset).
+   *
+   * @param {Object} daily - Daily values from the forecast response; index 0 is today.
+   */
+  #renderTodayCard(daily) {
+    const dom = this.config.dom;
+    const minEl = this.queryElement(dom.legacyTodayMin);
+    const maxEl = this.queryElement(dom.legacyTodayMax);
+    if (minEl) minEl.textContent = `${Math.round(daily.temperature_2m_min[0])}°`;
+    if (maxEl) maxEl.textContent = `${Math.round(daily.temperature_2m_max[0])}°`;
+
+    // Format and update Sunrise / Sunset if elements exist
+    const sunriseEl = this.queryElement(dom.legacySunrise);
+    const sunsetEl = this.queryElement(dom.legacySunset);
+    if (sunriseEl && daily.sunrise) {
+      const sunriseTime = new Date(daily.sunrise[0]).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      sunriseEl.textContent = `Sunrise: ${sunriseTime}`;
+    }
+    if (sunsetEl && daily.sunset) {
+      const sunsetTime = new Date(daily.sunset[0]).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      sunsetEl.textContent = `Sunset: ${sunsetTime}`;
+    }
+  }
+
+  /**
+   * Draws the hourly cards, starting from the current hour.
+   *
+   * @param {Object} data - Forecast data; uses data.current.time and data.hourly.
+   */
+  #renderHourly(data) {
+    const hourlyContainer = this.getElement("hourlyContainer");
+    if (!hourlyContainer) return;
+
+    hourlyContainer.innerHTML = ""; // Clear existing cards
+
+    // Find current hour index in the API response to align "Now" correctly
+    const currentIsoTime = data.current.time; // e.g., "2026-10-20T23:00"
+    let startIndex = 0;
+    if (data.hourly.time) {
+      const foundIndex = data.hourly.time.findIndex(t => t >= currentIsoTime);
+      if (foundIndex !== -1) startIndex = foundIndex;
+    }
+
+    // Loop through the configured number of hours starting from the current time index
+    for (let i = 0; i < this.config.forecast.mapClickHourlyHours; i++) {
+      const index = startIndex + i;
+      if (index >= data.hourly.time.length) break;
+
+      const timeStr = data.hourly.time[index];
+      const temp = Math.round(data.hourly.temperature_2m[index]);
+      const weatherCode = data.hourly.weather_code ? data.hourly.weather_code[index] : 0;
+      const rainChance = data.hourly.precipitation_probability ? data.hourly.precipitation_probability[index] : 0;
+
+      // Format time: "Now" for the first card, then formatted local hour (e.g., "12 AM", "1 AM")
+      const dateObj = new Date(timeStr);
+      const timeLabel = i === 0
+        ? "Now"
+        : dateObj.toLocaleTimeString(this.config.locale.hourLabelLocale, { hour: "numeric", hour12: true });
+
+      // Get styled icon
+      const iconHTML = WeatherIcons.getHtmlIcon(weatherCode);
+
+      hourlyContainer.innerHTML += `
+        <div class="text-center px-3 flex-shrink-0" style="min-width: 65px;">
+          <div class="small text-muted mb-1">${timeLabel}</div>
+          <div class="my-2">${iconHTML}</div>
+          <div class="fw-bold mb-1">${temp}°</div>
+          <div class="small text-primary" style="font-size: 0.75rem;">
+            <i class="bi bi-drop-fill" style="font-size: 0.65rem;"></i>${rainChance}%
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  /**
+   * Draws the daily cards, starting from tomorrow.
+   *
+   * @param {Object} data - Forecast data; uses data.daily and, if present, data.hourly.
+   */
+  #renderDaily(data) {
+    const dailyContainer = this.getElement("dailyContainer");
+    if (!dailyContainer) return;
+
+    let dailyHTML = '<div class="d-flex gap-3 overflow-auto py-2">';
+
+    for (let i = 1; i <= this.config.forecast.mapClickDailyDays; i++) {
+      const dateStr = data.daily.time[i];
+      const maxTemp = Math.round(data.daily.temperature_2m_max[i]);
+      const minTemp = Math.round(data.daily.temperature_2m_min[i]);
+      const rainChance = data.daily.precipitation_probability_max ? data.daily.precipitation_probability_max[i] : 0;
+
+      const dateObj = new Date(dateStr);
+      const dayName = i === 1
+        ? "Tomorrow"
+        : dateObj.toLocaleDateString(this.config.locale.hourLabelLocale, { weekday: "long" });
+      const monthDay = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+
+      // Find the hourly weather code closest to 12:00 PM (noon) for this day
+      let weatherCode = 0;
+      if (data.hourly && data.hourly.time && data.hourly.weather_code) {
+        // Find the index in hourly data where the date matches this daily date at roughly 12:00
+        const targetDateStr = dateStr.split("T")[0]; // e.g., "2026-10-23"
+        const noonIndex = data.hourly.time.findIndex(t => t.startsWith(targetDateStr) && t.includes("12:00"));
+
+        // Fallback to the first hour of that day if 12:00 isn't found
+        const fallbackIndex = data.hourly.time.findIndex(t => t.startsWith(targetDateStr));
+
+        const exactIndex = noonIndex !== -1 ? noonIndex : (fallbackIndex !== -1 ? fallbackIndex : i * 24);
+        weatherCode = data.hourly.weather_code[exactIndex] ?? 0;
+      } else if (data.daily.weather_code) {
+        weatherCode = data.daily.weather_code[i];
+      }
+
+      const iconHTML = WeatherIcons.getHtmlIcon(weatherCode);
+
+      const rainDisplay = rainChance > 0
+        ? `<div class="small text-primary fw-semibold mt-1"><i class="bi bi-drop-fill me-1"></i>${rainChance}%</div>`
+        : `<div class="small text-muted mt-1">${rainChance}%</div>`;
+
+      dailyHTML += `
+        <div class="card p-3 border-0 shadow-sm text-center rounded-4 bg-white flex-shrink-0" style="min-width: 125px;">
+          <div class="fw-bold">${dayName}</div>
+          <div class="small text-muted mb-2">${monthDay}</div>
+          <div class="my-2">${iconHTML}</div>
+          <div class="my-2">
+            <span class="fw-bold fs-5">${maxTemp}°</span>
+            <span class="text-muted ms-1">${minTemp}°</span>
+          </div>
+          ${rainDisplay}
+        </div>
+      `;
+    }
+    dailyHTML += "</div>";
+    dailyContainer.innerHTML = dailyHTML;
+  }
+}
+
+/**
  * Draws the temperature trend line chart with the Chart.js library.
  *
  * Parent class: UiComponent.
@@ -946,6 +1124,9 @@ class WeatherDashboard {
   /** Shows the location name in the heading and page title. */
   #heading;
 
+  /** Draws the cards shown after a map click. */
+  #mapClickRenderer;
+
   /** The temperature chart (also listed in #forecastComponents; kept separately for map clicks). */
   #chart;
 
@@ -970,6 +1151,7 @@ class WeatherDashboard {
     // Map and display objects
     this.#map = new WeatherMap(config);
     this.#heading = new LocationHeading(config);
+    this.#mapClickRenderer = new MapClickRenderer(config);
     this.#chart = new TemperatureChart(config);
 
     // The components redrawn for every forecast, in the order they are drawn.
@@ -1040,6 +1222,45 @@ class WeatherDashboard {
 
     // 4. Update the page title directly
     this.#heading.renderPageTitle(locationName);
+
+    // 5. Fetch weather data for the clicked coordinates
+    this.#loadWeatherByCoords(lat, lng);
+  }
+
+  /**
+   * Loads and shows the weather for a map click. This uses a simpler layout
+   * (MapClickRenderer) than a search does. To make map clicks look the same as
+   * searches, replace the body of this method with a call to loadForecast().
+   *
+   * @param {number|string} lat - Latitude of the click.
+   * @param {number|string} lng - Longitude of the click.
+   * @returns {Promise<void>} Resolves when the weather has been shown.
+   */
+  async #loadWeatherByCoords(lat, lng) {
+    const coords = WeatherFormatter.parseCoords(lat, lng);
+    if (!coords) {
+      console.error("Invalid coordinates received:", lat, lng);
+      return;
+    }
+
+    // Force map update
+    this.#map.panTo(coords.lat, coords.lng);
+    this.#map.setMarker(coords.lat, coords.lng);
+
+    try {
+      const data = await this.#weatherApi.fetchWeatherByCoords(coords.lat, coords.lng);
+      this.#mapClickRenderer.render(data);
+
+      // Update the Chart.js trend graph
+      this.#chart.render(data);
+
+      // Update marker popup with the current conditions
+      this.#map.setPopup(
+        `<b>Temperature: ${Math.round(data.current.temperature_2m)}°C</b><br>Humidity: ${data.current.relative_humidity_2m}%`
+      );
+    } catch (error) {
+      console.error("Error fetching weather:", error);
+    }
   }
 }
 

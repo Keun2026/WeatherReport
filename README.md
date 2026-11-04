@@ -45,5 +45,10 @@ This is my first GitHub deployment for my assessment.
 - `app.js`: Updated related WeatherMap
 - `index.html`: Added CSS link related Leaflet
 
-## Add ReverseGeocodingApi for place names on map click | Popup and page title show place name
+## Add ReverseGeocodingApi for place names on map click, popup and page title show place name (3/11/2026)
 - `map.js`: Ad above
+
+## Add MapClickRenderer to show weather after a map click, map click updates the cards (4/11/2026)
+- `app.js`: As above
+- `config.js`: Add css selectors
+- `index.html`: Clean links in body
