@@ -336,6 +336,77 @@ class WeatherApi extends ApiClient {
     return this.getJson(this.#buildForecastUrl(lat, lng, this.#config.api.mapClickFields));
   }
 }
+// 
+/**
+ * Searches for places by name using the Open-Meteo geocoding API.
+ *
+ * Parent class: ApiClient.
+ */
+class GeocodingApi extends ApiClient {
+  /** Shared settings from config.js (result counts, language, minimum query length). */
+  #config;
+
+  /**
+   * Creates the geocoding API client.
+   *
+   * @param {Object} [config=CONFIG] - Configuration object; defaults to the global CONFIG from config.js.
+   */
+  constructor(config = CONFIG) {
+    super(config.api.geocodingBaseUrl);
+    this.#config = config;
+  }
+
+  /**
+   * Finds the best match for a place name.
+   *
+   * @param {string} query - The place name typed by the user.
+   * @returns {Promise<{lat: number, lon: number, name: string}|null|undefined>}
+   *          The matching place; null if nothing matched; undefined if the query
+   *          was empty or the request failed.
+   */
+  async searchLocation(query) {
+    // Guards against empty or whitespace-only search input queries.
+    if (!query || query.trim() === "") return;
+    try {
+      const data = await this.getJson(
+        `${this.baseUrl}/search?name=${encodeURIComponent(query)}&count=${this.#config.search.singleResultCount}`
+      );
+
+      if (data.results && data.results.length > 0) {
+        const loc = data.results[0];
+        const locationName = `${loc.name}, ${loc.admin1 || loc.country}`;
+        return { lat: loc.latitude, lon: loc.longitude, name: locationName };
+      }
+      return null;
+    } catch (error) {
+      console.error("Geocoding search error:", error);
+    }
+  }
+
+  /**
+   * Fetches matching places while the user is typing (autocomplete).
+   *
+   * @param {string} query - The text typed so far.
+   * @returns {Promise<Object[]|null>} A list of matching places (empty if the query is too short
+   *                                   or nothing matched), or null if the request failed.
+   */
+  async fetchLocationSuggestions(query) {
+    // Ignores short input queries with fewer characters than the configured minimum.
+    if (!query || query.trim().length < this.#config.search.minQueryLength) return [];
+
+    const search = this.#config.search;
+    try {
+      const data = await this.getJson(
+        `${this.baseUrl}/search?name=${encodeURIComponent(query)}` +
+        `&count=${search.suggestionCount}&language=${search.language}&format=${this.#config.api.responseFormat}`
+      );
+      return data.results || [];
+    } catch (error) {
+      console.error("Error fetching location suggestions:", error);
+      return null;
+    }
+  }
+}
 
 /**
  * Converts map coordinates into a readable place name using OpenStreetMap
@@ -1115,6 +1186,9 @@ class WeatherDashboard {
   /** Fetches weather forecasts. */
   #weatherApi;
 
+  /** Searches for places by name. */
+  #geocodingApi;
+
   /** Converts map coordinates into a place name. */
   #reverseGeocodingApi;
 
@@ -1146,6 +1220,7 @@ class WeatherDashboard {
 
     // Data access objects
     this.#weatherApi = new WeatherApi(config);
+    this.#geocodingApi = new GeocodingApi(config);
     this.#reverseGeocodingApi = new ReverseGeocodingApi(config);
 
     // Map and display objects
@@ -1173,6 +1248,9 @@ class WeatherDashboard {
 
     // Map clicks
     this.#map.onClick((lat, lng) => this.#handleMapClick(lat, lng));
+
+    // Search box and search button
+    this.#bindSearchEvents();
   }
 
   /**
@@ -1200,6 +1278,22 @@ class WeatherDashboard {
       this.#forecastComponents.forEach(component => component.render(data));
     } catch (error) {
       console.error("Failed to load forecast:", error);
+    }
+  }
+
+  /**
+   * Searches for a place by name and loads its forecast.
+   *
+   * @param {string} query - The place name typed by the user.
+   * @returns {Promise<void>} Resolves when the search is finished.
+   */
+  async #searchLocation(query) {
+    const result = await this.#geocodingApi.searchLocation(query);
+    if (result) {
+      await this.loadForecast(result.lat, result.lon, result.name);
+    } else if (result === null) {
+      // Displays browser alert notification if location could not be resolved.
+      alert(this.#config.text.locationNotFound);
     }
   }
 
@@ -1260,6 +1354,33 @@ class WeatherDashboard {
       );
     } catch (error) {
       console.error("Error fetching weather:", error);
+    }
+  }
+
+  /**
+   * Attaches the event listeners for the search box and the search button.
+   */
+  #bindSearchEvents() {
+    // Queries DOM references for the search input and trigger button.
+    const searchInput = document.getElementById(this.#config.dom.searchInput);
+    const searchBtn = document.getElementById(this.#config.dom.searchBtn);
+
+    if (searchInput) {
+      // Enter key triggers immediate search on typed value
+      searchInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          this.#searchLocation(searchInput.value);
+        }
+      });
+    }
+
+    // Binds explicit click listener to the search button element.
+    if (searchBtn && searchInput) {
+      searchBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        this.#searchLocation(searchInput.value);
+      });
     }
   }
 }

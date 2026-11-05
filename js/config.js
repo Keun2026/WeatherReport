@@ -105,6 +105,20 @@ const CONFIG = deepFreeze({
     refreshDelayMs: 100
   },
 
+  /** Location search box behaviour. */
+  search: {
+    /** Fewest characters that must be typed before suggestions are requested. */
+    minQueryLength: 2,
+    /** Maximum number of suggestions shown in the dropdown. */
+    suggestionCount: 5,
+    /** Number of results requested when the user presses Enter or the search button. */
+    singleResultCount: 1,
+    /** Language of the place names returned by the geocoding API. */
+    language: "en",
+    /** Milliseconds to wait after the last keystroke before requesting suggestions. */
+    debounceMs: 300
+  },
+
   /** How much forecast data is displayed. */
   forecast: {
     /** Number of hourly cards shown for a search or the default load. */
@@ -161,6 +175,10 @@ const CONFIG = deepFreeze({
   dom: {
     /** ID of the element that holds the Leaflet map. */
     map: "map",
+    /** ID of the search text box. */
+    searchInput: "searchInput",
+    /** ID of the search button. */
+    searchBtn: "searchBtn",
     /** ID of the heading that shows the current location name. */
     cityName: "cityName",
     /** CSS selector of the page's main title, updated after a map click. */

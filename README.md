@@ -52,3 +52,7 @@ This is my first GitHub deployment for my assessment.
 - `app.js`: As above
 - `config.js`: Add css selectors
 - `index.html`: Clean links in body
+
+## Add GeocodingApi and search by Enter or search button, search works (5/11/2026)
+- `app.js`: As above
+- `config.js`: Add searchInput and searchBtn, object property search, and bindSearchEvents
