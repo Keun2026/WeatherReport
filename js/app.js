@@ -892,6 +892,86 @@ class WeatherWarnings extends UiComponent {
 }
 
 /**
+ * The autocomplete dropdown under the search box. It shows the suggestions
+ * and tells its owner which one the user picked; it does not decide what
+ * happens next.
+ *
+ * Parent class: UiComponent.
+ */
+class SearchSuggestions extends UiComponent {
+  /** Function called with { lat, lon, name } when the user picks a suggestion. */
+  #onSelect;
+
+  /**
+   * Creates the suggestions dropdown.
+   *
+   * @param {Function} onSelect - Called with { lat, lon, name } when a suggestion is clicked.
+   * @param {Object} [config=CONFIG] - Configuration object; defaults to the global CONFIG from config.js.
+   */
+  constructor(onSelect, config = CONFIG) {
+    super(config);
+    this.#onSelect = onSelect;
+  }
+
+  /**
+   * Fills the dropdown with one button per location and shows it.
+   *
+   * @param {Object[]} locations - Places returned by GeocodingApi.fetchLocationSuggestions().
+   */
+  render(locations) {
+    // Obtains search suggestions dropdown element reference.
+    const dropdown = this.getElement("searchSuggestions");
+    if (!dropdown) return;
+
+    dropdown.innerHTML = locations.map(loc => {
+      const stateCountry = [loc.admin1 === loc.name ? null : loc.admin1, loc.country].filter(Boolean).join(", ");
+      return `
+        <button
+          type="button"
+          class="dropdown-item py-2 px-3 text-truncate suggestion-item"
+          data-lat="${loc.latitude}"
+          data-lon="${loc.longitude}"
+          data-name="${loc.name}, ${stateCountry}"
+        >
+          <i class="bi bi-geo-alt me-2 text-muted"></i>
+          <strong>${loc.name}</strong>
+          <small class="text-muted ms-1">${stateCountry}</small>
+        </button>
+      `;
+    }).join("");
+
+    dropdown.classList.remove("d-none");
+    dropdown.classList.add("show");
+
+    dropdown.querySelectorAll(".suggestion-item").forEach(item => {
+      item.addEventListener("click", (e) => {
+        const btn = e.currentTarget;
+        const lat = parseFloat(btn.getAttribute("data-lat"));
+        const lon = parseFloat(btn.getAttribute("data-lon"));
+        const name = btn.getAttribute("data-name");
+
+        // Puts the chosen name into the search box.
+        const input = this.getElement("searchInput");
+        if (input) input.value = name;
+
+        // The owner decides what to do with the choice (update map, load forecast).
+        this.#onSelect({ lat, lon, name });
+        this.hide();
+      });
+    });
+  }
+
+  /** Hides and closes the search suggestions autocomplete dropdown menu. */
+  hide() {
+    const dropdown = this.getElement("searchSuggestions");
+    if (dropdown) {
+      dropdown.classList.add("d-none");
+      dropdown.classList.remove("show");
+    }
+  }
+}
+
+/**
  * Draws the weather cards after the user clicks the map. It uses a simpler
  * layout than the cards shown for searches (OverviewCards, HourlyForecast
  * and DailyForecast), and reads the smaller dataset requested by
@@ -1198,6 +1278,9 @@ class WeatherDashboard {
   /** Shows the location name in the heading and page title. */
   #heading;
 
+  /** The autocomplete dropdown under the search box. */
+  #suggestions;
+
   /** Draws the cards shown after a map click. */
   #mapClickRenderer;
 
@@ -1228,6 +1311,10 @@ class WeatherDashboard {
     this.#heading = new LocationHeading(config);
     this.#mapClickRenderer = new MapClickRenderer(config);
     this.#chart = new TemperatureChart(config);
+    this.#suggestions = new SearchSuggestions(
+      ({ lat, lon, name }) => this.#selectSuggestion(lat, lon, name),
+      config
+    );
 
     // The components redrawn for every forecast, in the order they are drawn.
     this.#forecastComponents = [
@@ -1298,6 +1385,34 @@ class WeatherDashboard {
   }
 
   /**
+   * Fetches suggestions for the text typed so far and shows (or hides) the dropdown.
+   *
+   * @param {string} query - The text currently in the search box.
+   * @returns {Promise<void>} Resolves when the dropdown has been updated.
+   */
+  async #showSuggestions(query) {
+    const results = await this.#geocodingApi.fetchLocationSuggestions(query);
+    if (results === null) return; // request failed, leave the dropdown as it is
+    if (results.length > 0) {
+      this.#suggestions.render(results);
+    } else {
+      this.#suggestions.hide();
+    }
+  }
+
+  /**
+   * Called when the user picks a suggestion: moves the map and loads that place's forecast.
+   *
+   * @param {number} lat - Latitude of the chosen place.
+   * @param {number} lon - Longitude of the chosen place.
+   * @param {string} name - Display name of the chosen place.
+   */
+  #selectSuggestion(lat, lon, name) {
+    this.#map.focusOn(lat, lon);
+    this.loadForecast(lat, lon, name);
+  }
+
+  /**
    * Called when the user clicks the map: marks the point.
    *
    * @param {number} lat - Latitude of the click.
@@ -1358,7 +1473,8 @@ class WeatherDashboard {
   }
 
   /**
-   * Attaches the event listeners for the search box and the search button.
+   * Attaches the event listeners for the search box, the search button and
+   * clicks elsewhere on the page (which close the dropdown).
    */
   #bindSearchEvents() {
     // Queries DOM references for the search input and trigger button.

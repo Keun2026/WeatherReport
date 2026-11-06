@@ -56,3 +56,6 @@ This is my first GitHub deployment for my assessment.
 ## Add GeocodingApi and search by Enter or search button, search works (5/11/2026)
 - `app.js`: As above
 - `config.js`: Add searchInput and searchBtn, object property search, and bindSearchEvents
+
+## Add SearchSuggestions autocomplete dropdown, suggestions while typing (6/11/2026)
+- `app.js`: As above
