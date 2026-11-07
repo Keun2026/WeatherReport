@@ -336,7 +336,7 @@ class WeatherApi extends ApiClient {
     return this.getJson(this.#buildForecastUrl(lat, lng, this.#config.api.mapClickFields));
   }
 }
-// 
+
 /**
  * Searches for places by name using the Open-Meteo geocoding API.
  *
@@ -1413,11 +1413,11 @@ class WeatherDashboard {
   }
 
   /**
-   * Called when the user clicks the map: marks the point.
+   * Called when the user clicks the map: marks the point, names it, and loads its weather.
    *
    * @param {number} lat - Latitude of the click.
    * @param {number} lng - Longitude of the click.
-   * @returns {Promise<void>} Resolves when the place name has been shown.
+   * @returns {Promise<void>} Resolves when the place name has been shown (the weather loads in the background).
    */
   async #handleMapClick(lat, lng) {
     // 1. Move or create marker
@@ -1480,21 +1480,41 @@ class WeatherDashboard {
     // Queries DOM references for the search input and trigger button.
     const searchInput = document.getElementById(this.#config.dom.searchInput);
     const searchBtn = document.getElementById(this.#config.dom.searchBtn);
+    let debounceTimer = null;
 
     if (searchInput) {
+      // Live input typing suggestions, waiting a short time after the last keystroke
+      searchInput.addEventListener("input", (e) => {
+        clearTimeout(debounceTimer);
+        const query = e.target.value;
+
+        debounceTimer = setTimeout(() => {
+          this.#showSuggestions(query);
+        }, this.#config.search.debounceMs);
+      });
+
       // Enter key triggers immediate search on typed value
       searchInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
+          this.#suggestions.hide();
           this.#searchLocation(searchInput.value);
         }
       });
     }
 
+    // Close dropdown if user clicks anywhere outside the search box
+    document.addEventListener("click", (e) => {
+      if (searchInput && !searchInput.contains(e.target)) {
+        this.#suggestions.hide();
+      }
+    });
+
     // Binds explicit click listener to the search button element.
     if (searchBtn && searchInput) {
       searchBtn.addEventListener("click", (e) => {
         e.preventDefault();
+        this.#suggestions.hide();
         this.#searchLocation(searchInput.value);
       });
     }
