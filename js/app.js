@@ -3,8 +3,9 @@
  * ---------------------------------------------------------------------------
  * OVERVIEW
  * Main script of the weather dashboard. It fetches weather data from the
- * Open-Meteo APIs, shows it on the page and lets the user choose a location
- * by typing a place name or by clicking on a Leaflet map.
+ * Open-Meteo APIs, shows it on the page (cards, hourly and daily forecasts,
+ * warnings, temperature chart) and lets the user choose a location by typing
+ * a place name or by clicking on a Leaflet map.
  *
  * All shared settings (URLs, default location, thresholds, element IDs...)
  * come from the CONFIG object in config.js, which must be loaded first.
@@ -13,7 +14,42 @@
  *
  * LOAD ORDER:  config.js -> map.js -> app.js   (plus the Leaflet and Chart.js libraries)
  *
- * (The complete class list and OOP notes are added to this header in the final commit.)
+ * CLASSES (in the order they appear in this file)
+ *   Utilities (static, never instantiated)
+ *     WeatherFormatter ........ date, time, wind and coordinate formatting
+ *     WeatherIcons ............ chooses weather icons
+ *   Data access
+ *     ApiClient ............... PARENT class: fetches JSON from a base URL
+ *     WeatherApi .............. forecast requests         (extends ApiClient)
+ *     GeocodingApi ............ place name search         (extends ApiClient)
+ *     ReverseGeocodingApi ..... coordinates to place name (extends ApiClient)
+ *   Display
+ *     UiComponent ............. PARENT class: shared DOM helpers + abstract render()
+ *     LocationHeading ......... location name and page title   (extends UiComponent)
+ *     OverviewCards ........... 'Now' and 'Today' cards       (extends UiComponent)
+ *     HourlyForecast .......... scrolling hourly cards        (extends UiComponent)
+ *     DailyForecast ........... multi-day cards               (extends UiComponent)
+ *     WeatherWarnings ......... warning alerts                (extends UiComponent)
+ *     SearchSuggestions ....... autocomplete dropdown         (extends UiComponent)
+ *     MapClickRenderer ........ cards shown after a map click (extends UiComponent)
+ *     TemperatureChart ........ Chart.js trend chart          (extends UiComponent)
+ *   Control
+ *     WeatherDashboard ........ controller that connects everything together
+ *   (WeatherMap, the Leaflet map class, is defined in map.js and used here.)
+ *
+ * PARENT CLASSES
+ *   ApiClient   -> WeatherApi, GeocodingApi, ReverseGeocodingApi
+ *   UiComponent -> LocationHeading, OverviewCards, HourlyForecast, DailyForecast,
+ *                  WeatherWarnings, SearchSuggestions, MapClickRenderer, TemperatureChart
+ *   (Parent classes are defined before their children because a class must
+ *    exist before another class can extend it.)
+ *
+ * OOP PRINCIPLES USED
+ *   Encapsulation .. internal state is stored in private (#) members
+ *   Abstraction .... each class has one job and hides how it does it
+ *   Inheritance .... the two parent classes above remove duplicated code
+ *   Polymorphism ... every UiComponent overrides render(), so the dashboard can
+ *                    call render() on all of them without knowing their type
  */
 
 // Stops the script early, with a clear message, if config.js was not loaded first.

@@ -179,6 +179,8 @@ const CONFIG = deepFreeze({
     searchInput: "searchInput",
     /** ID of the search button. */
     searchBtn: "searchBtn",
+    /** ID of the search suggestions dropdown. */
+    searchSuggestions: "searchSuggestions",
     /** ID of the heading that shows the current location name. */
     cityName: "cityName",
     /** CSS selector of the page's main title, updated after a map click. */

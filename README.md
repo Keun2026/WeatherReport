@@ -62,3 +62,7 @@ This is my first GitHub deployment for my assessment.
 
 ## Update private function bindSearchEvents() in app.js for SearchSuggestions autocomplete dropdown  (7/11/2026)
 - `app.js`: As above
+
+## Complete documentation headers and final tydy-up (8/11/2026)
+- `app.js`: As above
+- `config.js`: As above
