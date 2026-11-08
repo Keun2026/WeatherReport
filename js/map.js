@@ -1,5 +1,8 @@
 /**
- * map.js
+ * @file map.js
+ * @description Wraps Leaflet map initialization, marker management, and click event reporting 
+ * for the weather dashboard.
+ * 
  * ---------------------------------------------------------------------------
  * OVERVIEW
  * Contains the WeatherMap class: everything to do with the Leaflet map.

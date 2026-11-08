@@ -66,3 +66,5 @@ This is my first GitHub deployment for my assessment.
 ## Complete documentation headers and final tydy-up (8/11/2026)
 - `app.js`: As above
 - `config.js`: As above
+
+## Update all JavaScript files with the overview and description (8/11/2026)

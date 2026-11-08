@@ -1,5 +1,8 @@
 /**
- * config.js
+ * @file config.js
+ * @description Centralized configuration settings, constants, and helper functions shared 
+ * across the weather dashboard.
+ * 
  * ---------------------------------------------------------------------------
  * OVERVIEW
  * Central configuration file for the weather dashboard. Every value that is

@@ -1,5 +1,8 @@
 /**
- * app.js
+ * @file app.js
+ * @description Main controller script for the weather dashboard, handling API data requests, 
+ * UI component rendering, and user event listeners.
+ * 
  * ---------------------------------------------------------------------------
  * OVERVIEW
  * Main script of the weather dashboard. It fetches weather data from the

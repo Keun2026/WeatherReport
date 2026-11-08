@@ -2,6 +2,18 @@
  * @file contact.js
  * @description Handles client-side form validation, user feedback alerts, 
  * and local text file exporting for contact form submissions.
+ * 
+ * -----------------------------------------------------------------
+ * OVERVIEW
+ * Main script for the contact page. It manages the form submission lifecycle,
+ * validates user inputs (such as names, email formats, and message content),
+ * displays status alerts, and handles local data formatting for exports.
+ *
+ * CLASSES: FormHandler (or similar class structure if applicable).
+ * PARENT CLASSES: none.
+ *
+ * USAGE: loaded on the contact page:
+ *     <script src="contact.js"></script>
  */
 
 // FormHandler class encapsulates DOM references, field validation rules, file generation, and submit event handling.
